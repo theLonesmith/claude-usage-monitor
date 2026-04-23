@@ -16,8 +16,6 @@ never in the way.
 
 > Windows may show a SmartScreen warning. Click "More info" → "Run anyway".
 
-https://github.com/user-attachments/assets/6873df67-fb4a-4ac9-aa46-e38c8e96e1ce
-
 ## Screenshots
 
 <table>
@@ -49,6 +47,12 @@ https://github.com/user-attachments/assets/6873df67-fb4a-4ac9-aa46-e38c8e96e1ce
     <td align="center" width="50%">
       <img src="screenshots/6-login-screen.png" alt="Login Screen"/><br/>
       <sub><b>Login screen</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <video src="https://github.com/user-attachments/assets/6873df67-fb4a-4ac9-aa46-e38c8e96e1ce" controls width="100%"></video><br/>
+      <sub><b>Claude Usage Monitor in action</b></sub>
     </td>
   </tr>
 </table>
