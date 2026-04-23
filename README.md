@@ -71,6 +71,9 @@ usage data directly from the page — no API keys, no third-party servers.
 
 [Email Me](mailto:hello@lonesmith.com?subject=Bug%20Report%20%E2%80%94%20Claude%20Usage%20Monitor&body=App%20Version%3A%20v1.0.0%0AWindows%20Version%3A%20%0A%0ASteps%20to%20reproduce%3A%0A1.%20%0A2.%20%0A%0AExpected%20behavior%3A%0A%0A%0AWhat%20actually%20happened%3A%0A%0A%0A(Attach%20a%20screenshot%20if%20helpful)) with your Windows version and a description of what happened.
 
+SHA256 hash available on the [releases page](https://github.com/theLonesmith/claude-usage-monitor/releases/latest) 
+for verification.
+
 ---
 
 ☕ If this saves you from hitting the limit mid-conversation, consider 
