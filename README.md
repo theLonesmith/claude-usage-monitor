@@ -15,12 +15,13 @@ never in the way.
 > Windows may show a SmartScreen warning. Click "More info" → "Run anyway".
 
 ## Screenshots
-![Usage Bars](screenshots/1-tray-menu.png)
-![Usage Bars](screenshots/2-usage-bars.png)
-![History Chart](screenshots/3-history-8hrs.png)
-![Weekly Breakdown](screenshots/4-weekly-breakdown.png)
-![Settings](screenshots/5-settings.png)
-![Settings](screenshots/6-login-screen.png)
+
+![Tray Menu](1-tray-menu.png)
+![Usage Bars](2-usage-bars.png)
+![History Chart](3-history-8hrs.png)
+![Weekly Breakdown](4-weekly-breakdown.png)
+![Settings](5-settings.png)
+![Login](6-login-screen.png)
 
 ## Features
 
