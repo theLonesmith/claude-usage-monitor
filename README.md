@@ -10,7 +10,7 @@ never in the way.
 
 ## Download
 
-**[⬇ Download Claude Usage Monitor Setup 1.0.0.exe](https://github.com/theLonesmith/claude-usage-monitor/releases/latest)**
+**[⬇ Download Claude Usage Monitor Setup 1.0.1.exe](https://github.com/theLonesmith/claude-usage-monitor/releases/latest)**
 
 > Windows may show a SmartScreen warning. Click "More info" → "Run anyway".
 
