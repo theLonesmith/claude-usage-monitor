@@ -16,7 +16,7 @@ never in the way.
 
 > Windows may show a SmartScreen warning. Click "More info" → "Run anyway".
 
-## Screenshots
+## Screenshots & Video
 
 <table>
   <tr>
