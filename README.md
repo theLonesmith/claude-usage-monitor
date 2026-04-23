@@ -1,3 +1,5 @@
+<a href="https://www.producthunt.com/products/claude-usage-monitor-2?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-claude-usage-monitor-2" target="_blank" rel="noopener noreferrer"><img alt="Claude Usage Monitor - Never get caught off guard by Claude's usage limits again | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1131059&amp;theme=light&amp;t=1776987238395"></a>
+
 # Claude Usage Monitor
 
 Never get caught off guard by Claude's usage limits again.
