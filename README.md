@@ -16,6 +16,8 @@ never in the way.
 
 > Windows may show a SmartScreen warning. Click "More info" → "Run anyway".
 
+https://github.com/user-attachments/assets/6873df67-fb4a-4ac9-aa46-e38c8e96e1ce
+
 ## Screenshots
 
 <table>
