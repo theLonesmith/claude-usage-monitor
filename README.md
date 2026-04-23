@@ -16,12 +16,38 @@ never in the way.
 
 ## Screenshots
 
-![Tray Menu](1-tray-menu.png)
-![Usage Bars](2-usage-bars.png)
-![History Chart](3-history-8hrs.png)
-![Weekly Breakdown](4-weekly-breakdown.png)
-![Settings](5-settings.png)
-![Login](6-login-screen.png)
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="1-tray-menu.png" alt="Tray Menu"/><br/>
+      <sub><b>System tray context menu</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="2-usage-bars.png" alt="Usage Bars"/><br/>
+      <sub><b>Live session & weekly usage bars</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="3-history-8hrs.png" alt="History Chart"/><br/>
+      <sub><b>Usage history — past 8 hours</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="4-weekly-breakdown.png" alt="Weekly Breakdown"/><br/>
+      <sub><b>Weekly usage breakdown by day</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="5-settings.png" alt="Settings"/><br/>
+      <sub><b>Settings & notification thresholds</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="6-login-screen.png" alt="Login Screen"/><br/>
+      <sub><b>Login screen</b></sub>
+    </td>
+  </tr>
+</table>
 
 ## Features
 
