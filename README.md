@@ -4,6 +4,10 @@ A lightweight Windows desktop widget that tracks your Claude.ai session and week
 
 > **Not affiliated with or endorsed by Anthropic, PBC. "Claude" is a trademark of Anthropic, PBC.**
 
+[![Downloads](https://badgen.net/github/assets-dl/theLonesmith/claude-usage-monitor?color=blue)](https://github.com/theLonesmith/claude-usage-monitor/releases/latest)
+
+<a href="https://www.producthunt.com/products/claude-usage-monitor-2?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-claude-usage-monitor-2" target="_blank" rel="noopener noreferrer"><img alt="Claude Usage Monitor - Never get caught off guard by Claude's usage limits again | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1131059&theme=light&t=1776987238395"></a>
+
 ---
 
 ## Download
@@ -11,6 +15,51 @@ A lightweight Windows desktop widget that tracks your Claude.ai session and week
 👉 **[Download the latest installer from Releases](../../releases/latest)**
 
 Just download the `.exe` installer and run it. No Node.js, no terminal, nothing else required.
+
+> Windows may show a SmartScreen warning. Click "More info" → "Run anyway".
+
+---
+
+## Screenshots / Demo Video
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="screenshots/1-tray-menu.png" alt="Tray Menu"/><br/>
+      <sub><b>System tray context menu</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="screenshots/2-usage-bars.png" alt="Usage Bars"/><br/>
+      <sub><b>Live session & weekly usage bars</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="screenshots/3-history-8hrs.png" alt="History Chart"/><br/>
+      <sub><b>Usage history — past 8 hours</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="screenshots/4-weekly-breakdown.png" alt="Weekly Breakdown"/><br/>
+      <sub><b>Weekly usage breakdown by day</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="screenshots/5-settings.png" alt="Settings"/><br/>
+      <sub><b>Settings & notification thresholds</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="screenshots/6-login-screen.png" alt="Login Screen"/><br/>
+      <sub><b>Login screen</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <video src="https://github.com/user-attachments/assets/6873df67-fb4a-4ac9-aa46-e38c8e96e1ce" controls width="100%"></video><br/>
+      <sub><b>Claude Usage Monitor in action</b></sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
@@ -61,6 +110,39 @@ Just download the `.exe` installer and run it. No Node.js, no terminal, nothing 
 
 ---
 
+## Requirements
+
+- Windows 10 or 11
+- An active Claude.ai account
+
+---
+
+## How It Works
+
+Runs an embedded browser session logged into Claude.ai and reads your usage data directly from the page — no API keys, no third-party servers.
+
+---
+
+## Building from Source
+
+If you'd prefer to audit or build the app yourself:
+
+**Prerequisites:** [Node.js LTS](https://nodejs.org) (v18 or later)
+
+```
+1. Clone or download this repository
+2. Double-click setup.bat   (installs dependencies — ~200 MB, one time only)
+3. Double-click build.bat   (compiles the installer — accept the UAC prompt)
+4. Find your installer in the dist\ folder
+```
+
+For development / running without building:
+```
+Double-click run.bat
+```
+
+---
+
 ## Troubleshooting
 
 **Installer doesn't seem to do anything when double-clicked**
@@ -80,32 +162,22 @@ Just download the `.exe` installer and run it. No Node.js, no terminal, nothing 
 
 ---
 
-## Privacy
+## Privacy & Security
 
-- All data is stored **locally** on your machine (`%AppData%\Claude Usage Monitor\`)
-- Nothing is sent to any third-party server — this app talks only to `claude.ai`
-- Your Claude.ai session cookie is stored in an isolated Electron session partition
+- **Your data never leaves your machine.** The app only communicates directly with `claude.ai` — no third-party servers, no analytics, no telemetry.
+- **No API keys required.** The app uses the same browser session you'd use normally — it reads your usage data directly from the page.
+- **Your login is stored locally.** Your Claude.ai session is stored in an isolated Electron session on your own PC, the same way a browser stores a cookie.
+- All data is stored locally on your machine (`%AppData%\Claude Usage Monitor\`)
 - Uninstalling removes the program files; your AppData folder is kept so you can reinstall without re-logging in (delete it manually if you want a clean wipe)
+- **SHA256 hash available** on the [releases page](../../releases/latest) if you'd like to verify your download hasn't been tampered with.
+
+> If you have specific security questions, feel free to [email me](mailto:hello@lonesmith.com).
 
 ---
 
-## Building from Source
+## Found a Bug?
 
-If you'd prefer to build the installer yourself:
-
-**Prerequisites:** [Node.js LTS](https://nodejs.org) (v18 or later)
-
-```
-1. Clone or download this repository
-2. Double-click setup.bat   (installs dependencies — ~200 MB, one time only)
-3. Double-click build.bat   (compiles the installer — accept the UAC prompt)
-4. Find your installer in the dist\ folder
-```
-
-For development / running without building:
-```
-Double-click run.bat
-```
+[Email Me](mailto:hello@lonesmith.com?subject=Bug%20Report%20%E2%80%94%20Claude%20Usage%20Monitor&body=App%20Version%3A%20v1.0.1%0AWindows%20Version%3A%20%0A%0ASteps%20to%20reproduce%3A%0A1.%20%0A2.%20%0A%0AExpected%20behavior%3A%0A%0A%0AWhat%20actually%20happened%3A%0A%0A%0A(Attach%20a%20screenshot%20if%20helpful)) with your Windows version and a description of what happened.
 
 ---
 
@@ -120,5 +192,7 @@ This is an **unofficial, community-built tool**. It is not affiliated with, endo
 MIT — free to use, modify, and distribute.
 
 ---
+
+☕ If this saves you from hitting the limit mid-conversation, consider [buying me a coffee](https://buymeacoffee.com/lonesmith)!
 
 *Built by [Lonesmith](https://buymeacoffee.com/lonesmith)*
