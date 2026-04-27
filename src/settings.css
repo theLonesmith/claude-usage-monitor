@@ -1,0 +1,257 @@
+/* ── Reset ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:     #1a1a1a;
+  --card:   #212121;
+  --border: #2d2d2d;
+  --accent: #c97248;
+  --text:   #eeeeee;
+  --muted:  #6e6e6e;
+  --sub:    #555;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  overflow: hidden;   /* page layout handles scrolling */
+}
+
+/* ── Custom titlebar (matches widget header) ─────────────────────────────── */
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px 0 12px;
+  height: 38px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+}
+.titlebar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  -webkit-app-region: drag;
+}
+.titlebar-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.titlebar-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+.titlebar-close {
+  -webkit-app-region: no-drag;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  width: 24px; height: 24px;
+  border-radius: 4px;
+  font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+.titlebar-close:hover { color: #fff; background: #c04848; }
+
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Scrollable content area ─────────────────────────────────────────────── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ── Fixed footer — always visible at bottom ─────────────────────────────── */
+.footer-fixed {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  gap: 12px;
+}
+
+.about-col {
+  flex: 1;   /* fill available space so about-built can space-between */
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.about-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.about-name  { font-size: 12px; font-weight: 600; color: var(--text); }
+.about-ver   { font-size: 10px; color: var(--muted); }
+
+/* "Built by Lonesmith" — second line, plain muted text */
+.about-built {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.bug-link {
+  font-size: 10px;
+  color: var(--accent);   /* orange by default */
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.bug-link:hover { color: #fff; text-decoration: underline; }
+
+.bmc-img {
+  height: 34px;
+  width: auto;
+  cursor: pointer;
+  border-radius: 6px;
+  display: block;
+  transition: opacity 0.15s;
+}
+.bmc-img:hover { opacity: 0.85; }
+
+/* ── Sections ────────────────────────────────────────────────────────────── */
+.section {
+  padding: 10px 20px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.rule {
+  height: 1px;
+  background: var(--border);
+  margin: 2px 0;
+}
+
+/* ── Row ─────────────────────────────────────────────────────────────────── */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+}
+.row-toggle { align-items: flex-start; padding-top: 2px; }
+
+.row-left { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.row-label { font-size: 13px; font-weight: 500; color: var(--text); }
+.row-sub   { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+/* ── Pills ───────────────────────────────────────────────────────────────── */
+.pill { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+.pill-green { background: rgba(90,158,112,0.15); color: #6abf88; }
+.pill-red   { background: rgba(192,72,72,0.15);  color: #e07070; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: 6px; padding: 8px 16px;
+  font-size: 12px; font-family: inherit; font-weight: 600;
+  cursor: pointer; transition: opacity 0.15s, background 0.15s;
+}
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-accent:hover { opacity: 0.85; }
+
+.btn-ghost {
+  background: rgba(255,255,255,0.06); color: var(--muted);
+  border: 1px solid var(--border);
+  margin-top: 10px;
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+.btn-coffee { background: #FFDD00; color: #000; font-size: 12px; white-space: nowrap; }
+.btn-coffee:hover { opacity: 0.85; }
+
+/* Right column: nudge text stacked directly above the button */
+.coffee-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.coffee-nudge {
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* ── Toggle switch ───────────────────────────────────────────────────────── */
+.toggle { position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; inset: 0;
+  background: var(--sub); border-radius: 22px; cursor: pointer; transition: background 0.2s;
+}
+.slider::before {
+  content: ''; position: absolute;
+  height: 16px; width: 16px; left: 3px; bottom: 3px;
+  background: #fff; border-radius: 50%; transition: transform 0.2s;
+}
+input:checked + .slider              { background: var(--accent); }
+input:checked + .slider::before      { transform: translateX(16px); }
+
+/* ── Select ──────────────────────────────────────────────────────────────── */
+.select {
+  background: var(--card); border: 1px solid var(--border); border-radius: 5px;
+  color: var(--text); font-family: inherit; font-size: 12px; padding: 6px 10px;
+  cursor: pointer; min-width: 120px; outline: none;
+}
+.select:focus { border-color: var(--accent); }
+
+/* ── Notification thresholds ─────────────────────────────────────────────── */
+#notif-thresholds { display: flex; flex-direction: column; gap: 10px; padding-left: 2px; }
+#notif-thresholds.disabled { opacity: 0.4; pointer-events: none; }
+
+/* Generic disabled-row state (used by the Start-Minimized row when
+   Launch-on-Startup is off — the dependent setting is meaningless in
+   that case, so we gray it out and swallow clicks). */
+.row.disabled { opacity: 0.4; pointer-events: none; }
+
+.threshold-group { display: flex; flex-direction: column; gap: 6px; }
+.threshold-title { font-size: 10px; font-weight: 600; color: var(--muted); }
+
+.threshold-row { display: flex; align-items: center; gap: 10px; }
+.threshold-lbl { font-size: 11px; color: var(--muted); width: 52px; flex-shrink: 0; }
+.slider-range  { flex: 1; accent-color: var(--accent); cursor: pointer; height: 4px; }
+.threshold-val { font-size: 11px; font-weight: 600; color: var(--text); width: 32px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── Hidden ──────────────────────────────────────────────────────────────── */
+.hidden { display: none !important; }
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }

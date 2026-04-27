@@ -1,0 +1,50 @@
+{
+  "name": "claude-usage-monitor",
+  "version": "1.0.1",
+  "description": "Claude Usage Monitor — track your Claude.ai session and weekly usage",
+  "author": "Lonesmith",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.lonesmith.claude-usage-monitor",
+    "productName": "Claude Usage Monitor",
+    "copyright": "Copyright © 2026 Lonesmith",
+    "directories": { "output": "dist" },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "assets/icon.ico",
+      "publisherName": "Lonesmith",
+      "forceCodeSigning": false,
+      "sign": null,
+      "signingHashAlgorithms": null
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Claude Usage Monitor",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "deleteAppDataOnUninstall": false,
+      "include": "build/installer.nsh"
+    }
+  },
+  "devDependencies": {
+    "electron": "^29.0.0",
+    "electron-builder": "^24.13.0",
+    "chart.js": "^4.4.4"
+  }
+}

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';">
+  <title>Settings</title>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ── Custom titlebar (matches widget header) ─────────────────── -->
+  <div class="titlebar">
+    <div class="titlebar-left">
+      <img src="../assets/icon.png" class="titlebar-icon" alt="">
+      <span class="titlebar-title">Settings</span>
+    </div>
+    <button class="titlebar-close" id="btn-close-settings" title="Close">✕</button>
+  </div>
+
+  <!-- ── Scrollable content ──────────────────────────────────────── -->
+  <div class="content">
+
+    <!-- Account -->
+    <section class="section">
+      <div class="section-title">Account</div>
+
+      <div id="state-logged-in" class="hidden">
+        <div class="row">
+          <div class="row-left">
+            <div class="row-label">Status</div>
+            <div class="row-sub">Connected to Claude.ai</div>
+          </div>
+          <div class="pill pill-green">● Connected</div>
+        </div>
+        <button class="btn btn-ghost" id="btn-logout">Log out</button>
+      </div>
+
+      <div id="state-logged-out">
+        <div class="row">
+          <div class="row-left">
+            <div class="row-label">Status</div>
+            <div class="row-sub">Log in to start tracking usage</div>
+          </div>
+          <div class="pill pill-red">● Not connected</div>
+        </div>
+        <button class="btn btn-accent" id="btn-login">Login with Claude</button>
+      </div>
+    </section>
+
+    <div class="rule"></div>
+
+    <!-- Notifications -->
+    <section class="section">
+      <div class="section-title">Notifications</div>
+
+      <div class="row row-toggle">
+        <div class="row-left">
+          <div class="row-label">Allow Notifications</div>
+          <div class="row-sub">Windows toast alerts at usage thresholds</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="notif-enabled">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div id="notif-thresholds">
+        <div class="threshold-group">
+          <div class="threshold-title">Session window</div>
+          <div class="threshold-row">
+            <span class="threshold-lbl">Warning</span>
+            <input type="range" class="slider-range" id="s-warn"   min="50" max="95" step="5">
+            <span class="threshold-val" id="s-warn-val">75%</span>
+          </div>
+          <div class="threshold-row">
+            <span class="threshold-lbl">Critical</span>
+            <input type="range" class="slider-range" id="s-danger"  min="60" max="99" step="1">
+            <span class="threshold-val" id="s-danger-val">90%</span>
+          </div>
+        </div>
+        <div class="threshold-group">
+          <div class="threshold-title">Weekly window</div>
+          <div class="threshold-row">
+            <span class="threshold-lbl">Warning</span>
+            <input type="range" class="slider-range" id="w-warn"   min="50" max="95" step="5">
+            <span class="threshold-val" id="w-warn-val">75%</span>
+          </div>
+          <div class="threshold-row">
+            <span class="threshold-lbl">Critical</span>
+            <input type="range" class="slider-range" id="w-danger"  min="60" max="99" step="1">
+            <span class="threshold-val" id="w-danger-val">90%</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="rule"></div>
+
+    <!-- Preferences -->
+    <section class="section">
+      <div class="section-title">Preferences</div>
+
+      <div class="row row-toggle">
+        <div class="row-left">
+          <div class="row-label">Always on Top</div>
+          <div class="row-sub">Widget stays above other windows</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="pref-aot">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="row row-toggle">
+        <div class="row-left">
+          <div class="row-label">Launch on Startup</div>
+          <div class="row-sub">Automatically start with Windows</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="pref-startup">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="row row-toggle" id="row-start-min">
+        <div class="row-left">
+          <div class="row-label">Start Minimized to System Tray</div>
+          <div class="row-sub">Launch hidden to the tray instead of on screen</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="pref-start-min">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="row row-toggle">
+        <div class="row-left">
+          <div class="row-label">Check for Updates</div>
+          <div class="row-sub">Automatically check for updates on startup</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="pref-updates">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="row">
+        <div class="row-left">
+          <div class="row-label">Refresh Interval</div>
+          <div class="row-sub">How often to poll Claude</div>
+        </div>
+        <select id="pref-interval" class="select">
+          <option value="30">30 seconds</option>
+          <option value="60">1 minute</option>
+          <option value="120">2 minutes</option>
+          <option value="300">5 minutes</option>
+        </select>
+      </div>
+    </section>
+
+  </div><!-- /content -->
+
+  <!-- ── Fixed footer — always visible ──────────────────────────── -->
+  <div class="footer-fixed">
+    <div class="about-col">
+      <div class="about-row">
+        <div class="about-name">Claude Usage Monitor</div>
+        <div class="about-ver" id="about-version">v1.0.0</div>
+        <a href="#" id="btn-bug" class="bug-link">Report a bug</a>
+      </div>
+      <div class="about-built">Built by Lonesmith</div>
+    </div>
+    <div class="coffee-col">
+      <p class="coffee-nudge">Are you enjoying this app?</p>
+      <img id="btn-coffee" class="bmc-img" src="../assets/bmc-button.png" alt="Buy Me a Coffee">
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script src="settings.js"></script>
+</body>
+</html>

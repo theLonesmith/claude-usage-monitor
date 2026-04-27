@@ -1,0 +1,558 @@
+/* ── Reset & base ───────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #191919;
+  --card:     #202020;
+  --border:   #2d2d2d;
+  --accent:   #c97248;   /* Claude copper / terracotta */
+  --accent2:  #5b8dd4;   /* second series — muted blue */
+  --text:     #eeeeee;
+  --muted:    #6e6e6e;
+  --track:    #333333;
+  --warn:     #d09040;
+  --danger:   #c04848;
+  --blue:     #3a88e3;
+  --radius:   8px;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: transparent;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  user-select: none;
+}
+
+/* ── Widget shell ───────────────────────────────────────────────────────── */
+.widget {
+  display: flex;
+  flex-direction: column;
+  width: 100%; height: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px 0 12px;
+  height: 38px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.app-name {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.header-btns {
+  display: flex;
+  gap: 4px;
+  -webkit-app-region: no-drag;
+}
+
+.hbtn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  width: 26px; height: 26px;
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+.hbtn:hover               { color: var(--text); background: rgba(255,255,255,0.07); }
+.hbtn-close:hover         { color: #fff; background: var(--danger); }
+
+/* Text-based buttons (gear ⚙ and ✕) — sized to match image icons visually */
+.hbtn-text { font-size: 15px; }
+
+/* ── View-toggle button icons ────────────────────────────────────────────── */
+/* SVG calendar — inherits currentColor so it responds to hover automatically */
+.hbtn-svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: color 0.15s;
+}
+.hbtn-toggle:hover .hbtn-svg { color: var(--text); }
+
+/* Meter image (app icon shown when in history view) */
+.hbtn-icon {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  display: block;
+  filter: grayscale(1) opacity(0.55);
+  transition: filter 0.15s;
+}
+.hbtn-toggle:hover .hbtn-icon { filter: grayscale(1) opacity(0.90); }
+
+/* v-gone hides an element without affecting layout */
+.v-gone { display: none !important; }
+
+/* ── View wrapper + panels ───────────────────────────────────────────────── */
+/*
+ * Both panels (bars and history) are absolutely positioned inside the wrapper,
+ * so they overlay the exact same area. Only one is visible at a time via
+ * opacity + pointer-events. CSS transition gives the 250 ms fade.
+ */
+.view-wrapper {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.view-panel {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Hidden state: removed from layout entirely. JS handles the fade animation. */
+.view-panel.v-hidden {
+  display: none;
+}
+
+/* ── Usage bars ─────────────────────────────────────────────────────────── */
+.bars {
+  padding: 14px 14px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.bar-block {}
+
+.bar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.bar-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bar-sub {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.bar-pct {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  min-width: 38px;
+  text-align: right;
+}
+
+/* Progress track */
+.track {
+  width: 100%;
+  height: 8px;
+  background: var(--track);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  width: 0%;
+  background: var(--blue);
+  border-radius: 4px;
+  transition: width 0.4s ease, background-color 0.3s ease;
+}
+
+.fill.normal { background: var(--blue);   }
+.fill.warn   { background: var(--warn);   }
+.fill.danger { background: var(--danger); }
+
+/* ── Unlimited extra-usage bar — diagonal candy-cane stripes ─────────────── */
+/*
+ * Square background-size (20×20) + percentage stops is the reliable recipe for
+ * clean diagonal bands on a short bar. The previous 'background-size: 40px 100%'
+ * squashed the gradient into an 8px strip, clipping the stripes into triangular
+ * "lightning bolt" points. Animating by exactly one tile (20px, 20px) gives a
+ * seamless slow crawl without jarring jumps.
+ */
+@keyframes stripe-slide {
+  from { background-position: 0 0; }
+  to   { background-position: 20px 20px; }
+}
+
+.fill.unlimited {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--blue) 0%  25%,
+    #6aaef7    25%  50%
+  );
+  background-size: 20px 20px;
+  animation: stripe-slide 3s linear infinite;
+  width: 100% !important;
+  transition: none;
+}
+
+/* ── Daily breakdown view ────────────────────────────────────────────────── */
+.daily-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  min-height: 0;
+  padding: 2px 0;
+}
+
+.day-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-height: 12px;
+}
+
+.day-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  width: 26px;
+  flex-shrink: 0;
+  text-align: right;
+  letter-spacing: 0.02em;
+}
+.day-label.today  { color: var(--text); }
+.day-label.future { color: #444; }
+
+.day-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--track);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.day-bar-fill {
+  height: 100%;
+  background: var(--accent);   /* orange — weekly usage per day */
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.day-bar-fill.today  { background: var(--accent); }
+.day-bar-fill.future { background: transparent; }
+.day-bar-fill.remaining { background: var(--blue); }  /* blue — remaining allowance */
+
+.day-pct {
+  font-size: 10px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.day-pct.today  { color: var(--text); }
+.day-pct.future { color: #444; }
+
+.day-divider {
+  height: 1px;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 2px 0;
+}
+
+.daily-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  padding: 0 12px;
+  line-height: 1.4;
+}
+
+.bar-footer {
+  margin-top: 4px;
+  min-height: 14px;
+}
+
+.bar-reset {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* ── Divider ─────────────────────────────────────────────────────────────── */
+.rule {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 0;
+  flex-shrink: 0;
+}
+
+/* ── Graph section (lives inside view-history panel) ────────────────────── */
+.graph-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px 0;
+  min-height: 0;
+}
+
+.graph-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.graph-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.tog-group {
+  display: flex;
+  background: var(--track);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.tog {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 3px 10px;
+  font-size: 10px;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  transition: color 0.15s, background 0.15s;
+}
+.tog:hover  { color: var(--text); }
+.tog.active { background: var(--border); color: var(--text); }
+
+.chart-wrap {
+  flex: 1;
+  position: relative;
+  min-height: 80px;
+}
+
+.chart-wrap canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Empty-state overlay shown when the chart has no data to draw. Sits on
+   top of the canvas so axis labels still render behind it but the user
+   gets a clear "nothing here yet" message instead of a blank panel. */
+.chart-empty {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 16px;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+  pointer-events: none;
+}
+.chart-empty.visible { display: flex; }
+
+.graph-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0 4px;
+  flex-shrink: 0;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+.legend-s { background: var(--blue); }    /* Session = blue, matches main bars */
+.legend-w { background: var(--accent); }  /* Weekly  = orange */
+
+.legend-lbl {
+  font-size: 10px;
+  color: var(--muted);
+  margin-right: 8px;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 14px 8px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.status {
+  font-size: 10px;
+  color: var(--muted);
+  max-width: 65%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status.ok      { color: #5a9e70; }
+.status.warn    { color: var(--warn); }
+.status.error   { color: var(--danger); }
+
+.last-update {
+  font-size: 10px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 1px 3px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.last-update:hover {
+  color: var(--text);
+  background: rgba(255,255,255,0.07);
+}
+
+/* ── Context menu ────────────────────────────────────────────────────────── */
+.ctx-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  -webkit-app-region: no-drag;
+}
+.ctx-backdrop.hidden { display: none; }
+
+.ctx {
+  position: fixed;
+  z-index: 9999;
+  background: #252525;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  padding: 4px 0;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  font-size: 12px;
+}
+
+.ctx.hidden { display: none; }
+
+.ctx-item {
+  padding: 7px 14px;
+  cursor: pointer;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.1s;
+}
+.ctx-item:hover      { background: rgba(255,255,255,0.07); }
+.ctx-item.ctx-danger { color: #e07070; }
+.ctx-item.ctx-danger:hover { background: rgba(192,72,72,0.2); }
+
+.ctx-sep {
+  height: 1px;
+  background: #333;
+  margin: 3px 0;
+}
+
+/* ── Limit-reached banner ────────────────────────────────────────────────── */
+.limit-banner {
+  background: rgba(192, 72, 72, 0.15);
+  border-bottom: 1px solid rgba(192, 72, 72, 0.3);
+  color: #e07070;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 7px 14px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+.limit-banner.hidden { display: none; }
+
+/* ── State messages ──────────────────────────────────────────────────────── */
+.state-overlay {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  text-align: center;
+}
+.state-overlay.visible { display: flex; }
+
+.state-icon { font-size: 28px; opacity: 0.4; }
+.state-msg  { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.state-btn  {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 7px 18px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.state-btn:hover { opacity: 0.85; }
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }

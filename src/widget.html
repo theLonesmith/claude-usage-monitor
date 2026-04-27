@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';">
+  <title>Claude Usage Monitor</title>
+  <link rel="stylesheet" href="widget.css">
+</head>
+<body>
+
+  <!-- ── Context menu backdrop (captures clicks anywhere in window) ── -->
+  <div id="ctx-backdrop" class="ctx-backdrop hidden"></div>
+
+  <!-- ── Custom context menu ─────────────────────────────────────── -->
+  <div id="ctx" class="ctx hidden">
+    <div class="ctx-item" data-action="refresh">↺&ensp;Refresh Now</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" data-action="check-updates">⬇&ensp;Check for Updates</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" data-action="settings">⚙&ensp;Settings</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item ctx-danger" data-action="hide">✕&ensp;Hide to Tray</div>
+  </div>
+
+  <!-- ── Widget ──────────────────────────────────────────────────── -->
+  <div class="widget">
+
+    <!-- Header -->
+    <div class="header" id="drag">
+      <div class="header-left">
+        <img src="../assets/icon.png" class="logo" alt="">
+        <span class="app-name">Claude Usage Monitor</span>
+      </div>
+      <div class="header-btns">
+        <!-- View toggle: calendar SVG = on bars view; meter img = on history view -->
+        <button class="hbtn hbtn-toggle" id="btn-view-toggle" title="Show Usage History">
+          <svg id="icon-calendar" class="hbtn-svg" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <rect x="1" y="3" width="16" height="14" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="5"  y1="1" x2="5"  y2="5"  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="13" y1="1" x2="13" y2="5"  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="1"  y1="7" x2="17" y2="7"  stroke="currentColor" stroke-width="1.2"/>
+            <rect x="3.5" y="9.5"  width="2.5" height="2" rx="0.5"/>
+            <rect x="7.8" y="9.5"  width="2.5" height="2" rx="0.5"/>
+            <rect x="12"  y="9.5"  width="2.5" height="2" rx="0.5"/>
+            <rect x="3.5" y="13"   width="2.5" height="2" rx="0.5"/>
+            <rect x="7.8" y="13"   width="2.5" height="2" rx="0.5"/>
+            <rect x="12"  y="13"   width="2.5" height="2" rx="0.5"/>
+          </svg>
+          <img id="icon-meter" class="hbtn-icon v-gone" src="../assets/icon.png" alt="">
+        </button>
+        <button class="hbtn hbtn-text" id="btn-settings" title="Settings">⚙</button>
+        <button class="hbtn hbtn-text hbtn-close" id="btn-hide" title="Hide to tray">✕</button>
+      </div>
+    </div>
+
+    <!-- Limit-reached banner (sits above both views, always visible when triggered) -->
+    <div class="limit-banner hidden" id="limit-banner"></div>
+
+    <!-- ── View wrapper: both panels overlay the same space ──────── -->
+    <div class="view-wrapper">
+
+      <!-- View A: Usage Bars (shown on every launch) -->
+      <div class="view-panel" id="view-bars">
+        <div class="bars">
+
+          <!-- Session -->
+          <div class="bar-block">
+            <div class="bar-header">
+              <span class="bar-name">SESSION <span class="bar-sub">(5-hour window)</span></span>
+              <span class="bar-pct" id="s-pct">—</span>
+            </div>
+            <div class="track"><div class="fill" id="s-fill"></div></div>
+            <div class="bar-footer"><span class="bar-reset" id="s-reset"></span></div>
+          </div>
+
+          <!-- Weekly -->
+          <div class="bar-block">
+            <div class="bar-header">
+              <span class="bar-name">WEEKLY <span class="bar-sub">(7-day window)</span></span>
+              <span class="bar-pct" id="w-pct">—</span>
+            </div>
+            <div class="track"><div class="fill" id="w-fill"></div></div>
+            <div class="bar-footer"><span class="bar-reset" id="w-reset"></span></div>
+          </div>
+
+          <!-- Extra usage — only shown when is_enabled === true -->
+          <div class="bar-block hidden" id="bar-extra">
+            <div class="bar-header">
+              <span class="bar-name">EXTRA USAGE <span class="bar-sub">(pay-per-use)</span></span>
+              <span class="bar-pct" id="e-pct">—</span>
+            </div>
+            <div class="track"><div class="fill" id="e-fill"></div></div>
+            <div class="bar-footer"><span class="bar-reset" id="e-credits"></span></div>
+          </div>
+
+        </div><!-- /bars -->
+      </div><!-- /view-bars -->
+
+      <!-- View B: Usage History (hidden on launch, toggled via calendar button) -->
+      <div class="view-panel v-hidden" id="view-history">
+        <div class="graph-section">
+          <div class="graph-header">
+            <span class="graph-title">Usage History</span>
+            <div class="tog-group">
+              <button class="tog active" data-range="8h">Past 8hrs</button>
+              <button class="tog"        data-range="day">Weekly Usage</button>
+            </div>
+          </div>
+          <div class="chart-wrap" id="chart-wrap">
+            <canvas id="chart"></canvas>
+            <div id="chart-empty" class="chart-empty">No data yet — history will appear as you use Claude</div>
+          </div>
+          <!-- Daily breakdown view — shown when Day tab is active -->
+          <div id="daily-wrap" class="daily-wrap v-gone"></div>
+          <div class="graph-legend" id="graph-legend">
+            <span class="legend-dot legend-s"></span><span class="legend-lbl">Session</span>
+            <span class="legend-dot legend-w"></span><span class="legend-lbl">Weekly</span>
+          </div>
+        </div>
+      </div><!-- /view-history -->
+
+    </div><!-- /view-wrapper -->
+
+    <!-- Footer -->
+    <div class="footer">
+      <span class="status" id="status">Starting…</span>
+      <span class="last-update" id="last-update"></span>
+    </div>
+
+  </div><!-- /widget -->
+
+  <script src="chart.umd.min.js"></script>
+  <script src="widget.js"></script>
+</body>
+</html>
