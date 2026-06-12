@@ -4,6 +4,7 @@ A lightweight Windows desktop widget that tracks your Claude.ai session and week
 
 > **Not affiliated with or endorsed by Anthropic, PBC. "Claude" is a trademark of Anthropic, PBC.**
 
+
 [![Downloads](https://img.shields.io/github/downloads/theLonesmith/claude-usage-monitor/total?color=c97248&label=downloads)](../../releases/latest)
 
 ---
