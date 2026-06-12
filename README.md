@@ -18,11 +18,14 @@ Just download the `.exe` installer and run it. No Node.js, no terminal, nothing 
 
 - **Session usage bar** — 5-hour window showing % used and time until reset
 - **Weekly usage bar** — 7-day window showing % used and time until reset
-- **Usage history graph** — 8-hour or 7-day sparkline chart
+- **Usage history graph** — an 8-hour timeline plus a daily breakdown of your week, with markers showing where Claude reset your limits
+- **Tray tooltip** — hover the tray icon to see your current session and weekly usage at a glance
 - **Toast notifications** — configurable alerts at warning and critical thresholds
+- **Extra usage bar** — shows your pay-per-use spend when that's enabled on your account
 - **Always on top** — stays visible above other windows (toggle in Settings)
 - **System tray** — minimize out of the way, always accessible
 - **Launch on startup** — auto-starts with Windows, optionally minimized to tray
+- **Automatic update alerts** — lets you know when a new version is available (toggle in Settings)
 - **Draggable** — drag the title bar to position the widget anywhere on screen
 - **One-click login** — logs in to Claude.ai directly inside the app
 
@@ -41,8 +44,9 @@ Just download the `.exe` installer and run it. No Node.js, no terminal, nothing 
 ## Usage
 
 **System tray:**
+- **Hover** the tray icon → see your current session & weekly usage in the tooltip
 - **Left-click** the tray icon → show / hide the widget
-- **Right-click** the tray icon → Refresh, Settings, or Quit
+- **Right-click** the tray icon → Refresh, Check for Updates, Settings, or Quit
 
 **Settings** (gear icon in the widget):
 
@@ -58,6 +62,7 @@ Just download the `.exe` installer and run it. No Node.js, no terminal, nothing 
 | Launch on Startup | Auto-start with Windows |
 | Start Minimized | Start hidden to tray (only applies when Launch on Startup is on) |
 | Refresh Interval | How often to poll Claude.ai (default: 1 minute) |
+| Check for Updates | Checks GitHub for a newer version on launch and once a day |
 
 ---
 
