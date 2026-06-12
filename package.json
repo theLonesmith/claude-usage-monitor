@@ -1,6 +1,6 @@
 {
   "name": "claude-usage-monitor",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Claude Usage Monitor — track your Claude.ai session and weekly usage",
   "author": "Lonesmith",
   "main": "main.js",

@@ -1,0 +1,31 @@
+# ─── Dependencies ────────────────────────────────────────────────────────────
+# Never commit node_modules — anyone cloning the repo runs setup.bat to rebuild.
+node_modules/
+
+# ─── Build output ─────────────────────────────────────────────────────────────
+# The dist/ folder contains the compiled installer and win-unpacked folder.
+# These are large binary artifacts, not source code. Distribute via GitHub Releases.
+dist/
+
+# ─── Generated / copied assets ───────────────────────────────────────────────
+# chart.umd.min.js is copied from node_modules into src/ by setup.bat.
+# It should not be committed — it gets recreated on every setup.
+src/chart.umd.min.js
+
+# ─── Electron builder cache ───────────────────────────────────────────────────
+.cache/
+
+# ─── OS junk ──────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Editor / IDE files ──────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.user
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*

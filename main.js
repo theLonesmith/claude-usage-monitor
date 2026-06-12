@@ -14,6 +14,15 @@ const { spawnSync } = require('child_process');
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) { app.quit(); }
 
+// ── Hardware acceleration ────────────────────────────────────────────────────
+// The widget is a ~340px window drawing two progress bars and an occasional
+// small chart. Compositing it on the GPU spins up a separate Chromium GPU
+// process (~20-30 MB) for no real benefit. Rendering in software removes that
+// process entirely. Trade-off: window fades and chart tooltips paint on the CPU,
+// which is imperceptible at this window size. (Comment out this one line if the
+// fades ever look soft on a particular PC.)
+app.disableHardwareAcceleration();
+
 // ── Paths ──────────────────────────────────────────────────────────────────
 const USER_DATA    = app.getPath('userData');
 const CONFIG_FILE  = path.join(USER_DATA, 'config.json');
@@ -39,9 +48,13 @@ const DEFAULTS = {
   refresh_interval:      60,
   history_view:          '8h',    // renamed from '24h' (the label was always "8h")
   check_for_updates:     true,    // check GitHub releases on startup
-  coffee_url:            'https://buymeacoffee.com/lonesmith',
   onboarding_shown:      false,   // one-time welcome screen after first login
 };
+
+// Developer constant, not a user preference — so it lives here instead of in
+// config.json. The get-config IPC handler injects it so the settings renderer
+// can still read it from the config object it already receives.
+const COFFEE_URL = 'https://buymeacoffee.com/lonesmith';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Window fade helper
@@ -143,13 +156,10 @@ function loadConfig() {
   const loaded = safeReadJSON(CONFIG_FILE, null);
   cfg = loaded ? { ...DEFAULTS, ...loaded } : { ...DEFAULTS };
 
-  // ── Developer-controlled constants — never let saved config override ─────
-  // coffee_url is a developer constant, not a user preference. If an older
-  // build wrote a placeholder (e.g. 'YOUR_USERNAME') into config.json, we
-  // overwrite it here so the correct URL is always used.
-  cfg.coffee_url = DEFAULTS.coffee_url;
-
   // ── One-time migrations ───────────────────────────────────────────────────
+  // coffee_url used to be stored in config.json; it's a developer constant
+  // (COFFEE_URL above) now, so drop any stale copy from older builds.
+  delete cfg.coffee_url;
   if (cfg.history_view === '24h') cfg.history_view = '8h';   // old internal key
   if (cfg.history_view === '7d')  cfg.history_view = 'day';  // 7d tab removed
 }
@@ -158,23 +168,68 @@ function saveConfig() {
   atomicWriteJSON(CONFIG_FILE, cfg, /* pretty */ true);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  In-memory history cache
+//
+//  The history array is held in memory and flushed to disk on a timer (every
+//  HISTORY_FLUSH_MS) plus on quit — instead of being read, rewritten, AND
+//  backup-copied on every single poll. For a file that grows to thousands of
+//  entries while polling every 30-60s, that per-poll rewrite was ~99% of the
+//  app's disk I/O. The on-disk format and the atomic-write/.bak safety machinery
+//  are unchanged; they just run far less often.
+// ─────────────────────────────────────────────────────────────────────────────
+
+let historyCache       = null;   // loaded lazily on first access
+let historyDirty       = false;  // in-memory data differs from what's on disk
+let historyFlushTimer  = null;
+const HISTORY_FLUSH_MS     = 5 * 60 * 1000;   // flush to disk every 5 minutes
+const HISTORY_HEARTBEAT_MS = 5 * 60 * 1000;   // force a sample at least this often
+
 function loadHistory() {
-  const arr = safeReadJSON(HISTORY_FILE, []);
-  return Array.isArray(arr) ? arr : [];
+  if (historyCache === null) {
+    const arr = safeReadJSON(HISTORY_FILE, []);
+    historyCache = Array.isArray(arr) ? arr : [];
+  }
+  return historyCache;
 }
 
-function saveHistory(arr) {
-  atomicWriteJSON(HISTORY_FILE, arr);
+function flushHistory() {
+  if (!historyDirty || historyCache === null) return;
+  if (atomicWriteJSON(HISTORY_FILE, historyCache)) historyDirty = false;
 }
 
+function startHistoryFlushTimer() {
+  if (historyFlushTimer) return;
+  historyFlushTimer = setInterval(flushHistory, HISTORY_FLUSH_MS);
+}
+
+// Append a sample to the in-memory history and return the new entry, or null if
+// nothing was recorded. We skip appends when neither value changed (utilization
+// is reported in whole percents and moves slowly, so most polls are exact
+// duplicates) unless HISTORY_HEARTBEAT_MS has elapsed — the heartbeat keeps the
+// history graph continuous during idle stretches. Pruning to the 7-day window
+// happens in place.
 function appendHistory(s, w) {
-  if (s === null && w === null) return loadHistory();
-  const now    = Date.now();
-  const hist   = loadHistory();
-  hist.push({ ts: now, s: s !== null ? +s.toFixed(4) : null, w: w !== null ? +w.toFixed(4) : null });
-  const pruned = hist.filter(h => h.ts > now - 7 * 864e5);
-  saveHistory(pruned);
-  return pruned;
+  const hist = loadHistory();
+  if (s === null && w === null) return null;
+
+  const now  = Date.now();
+  const sVal = s !== null ? +s.toFixed(4) : null;
+  const wVal = w !== null ? +w.toFixed(4) : null;
+
+  const last    = hist[hist.length - 1];
+  const changed = !last || last.s !== sVal || last.w !== wVal;
+  const stale   = !last || (now - last.ts) >= HISTORY_HEARTBEAT_MS;
+  if (!changed && !stale) return null;
+
+  const entry = { ts: now, s: sVal, w: wVal };
+  hist.push(entry);
+
+  const cutoff = now - 7 * 864e5;
+  while (hist.length && hist[0].ts <= cutoff) hist.shift();
+
+  historyDirty = true;
+  return entry;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -558,12 +613,18 @@ async function checkForUpdates(silent = true) {
       return;
     }
 
-    // Newer version available — always show regardless of silent flag
+    // Newer version available — always show regardless of silent flag.
+    // Pull the release notes from the GitHub release body so the dialog can tell
+    // the user WHY they should update (e.g. "Bug fixes"). Whatever you type into
+    // the release description on GitHub shows up here. Falls back cleanly if the
+    // release has no notes.
+    const notes    = (data.body || '').trim();
+    const whatsNew = notes ? `\n\nWhat's new in v${latest}:\n${notes}` : '';
     const { response } = await dialog.showMessageBox(widgetWin, {
       type:      'info',
       title:     'Update Available',
       message:   `Claude Usage Monitor v${latest} is available`,
-      detail:    `You're running v${current}. Would you like to open the download page?`,
+      detail:    `You're running v${current}.${whatsNew}\n\nWould you like to open the download page?`,
       buttons:   ['Download Update', 'Not Now'],
       defaultId: 0,
       cancelId:  1,
@@ -597,6 +658,7 @@ async function poll() {
   const loggedIn = await isLoggedIn();
   if (!loggedIn) {
     widgetWin?.webContents.send('usage-update', { status: 'no_session' });
+    tray?.setToolTip('Claude Usage Monitor — not logged in');
     return;
   }
 
@@ -631,14 +693,21 @@ async function poll() {
     console.log(JSON.stringify(data, null, 2));
   }
 
-  const history = appendHistory(s, w);
+  const newPoint = appendHistory(s, w);
   maybeNotify(s, w);
+
+  // Live usage in the tray tooltip — hovering the tray icon shows current
+  // usage without opening the widget at all. (Windows caps tooltips at 127
+  // chars; this is well under.)
+  const sTip = s !== null ? `${Math.round(s * 100)}%` : '—';
+  const wTip = w !== null ? `${Math.round(w * 100)}%` : '—';
+  tray?.setToolTip(`Claude Usage Monitor\nSession ${sTip}  ·  Weekly ${wTip}`);
 
   widgetWin?.webContents.send('usage-update', {
     status: 'ok', s, w, resets, weeklyResets, extraUsage,
     sessionResetsAt, weeklyResetsAt,
     updatedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    history,
+    point: newPoint,   // single new sample (or null) — renderer appends locally
   });
 }
 
@@ -973,7 +1042,7 @@ function createTray() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function registerIPC() {
-  ipcMain.handle('get-config',      () => ({ ...cfg }));
+  ipcMain.handle('get-config',      () => ({ ...cfg, coffee_url: COFFEE_URL }));
   ipcMain.handle('get-history',     () => loadHistory());
   ipcMain.handle('get-login-status',() => isLoggedIn());
   ipcMain.handle('get-version',     () => app.getVersion());
@@ -1085,13 +1154,17 @@ app.on('ready', async () => {
 
   await createWidgetWindow();
   createTray();
+  startHistoryFlushTimer();
   // NOTE: startPolling() is called inside createWidgetWindow()'s did-finish-load
   // handler, ensuring poll() only fires after widget.js has registered its listeners.
 
   // ── Update check ─────────────────────────────────────────────────────────
   // Deferred 5 seconds so the widget is fully loaded and the first poll has
-  // already fired before any dialog could appear.
+  // already fired before any dialog could appear. Then re-checked once a day:
+  // this is a tray app that users leave running for weeks, so a startup-only
+  // check would never reach always-on users.
   setTimeout(() => checkForUpdates(), 5000);
+  setInterval(() => checkForUpdates(), 24 * 3_600_000);
 });
 
 app.on('second-instance', () => { widgetWin?.show(); widgetWin?.focus(); });
@@ -1111,6 +1184,9 @@ app.on('before-quit', () => {
       }
     } catch (_) {}
   }
+  // Flush any unsaved history samples to disk before we exit.
+  if (historyFlushTimer) { clearInterval(historyFlushTimer); historyFlushTimer = null; }
+  flushHistory();
   // Flush the session to disk so LevelDB closes cleanly before process exits
   try { claudeSes().flushStorageData(); } catch (_) {}
 });

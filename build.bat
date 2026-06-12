@@ -75,7 +75,7 @@ echo   Build complete!
 echo  ======================================
 echo.
 echo  Your installer is in the dist\ folder:
-echo    Claude Usage Monitor Setup 1.0.0.exe
+echo    Claude Usage Monitor Setup 1.0.2.exe
 echo.
 echo  Share that single file — users just double-click it to install.
 echo  No Node.js, no zip, no extra files needed.

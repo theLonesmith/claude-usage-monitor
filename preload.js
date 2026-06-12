@@ -23,7 +23,6 @@ if (location.protocol === 'file:') {
     closeOnboarding:      ()      => ipcRenderer.send('close-onboarding'),
     onUsageUpdate:        (fn)    => ipcRenderer.on('usage-update',         (_, d) => fn(d)),
     onLoginSuccess:       (fn)    => ipcRenderer.on('login-success',        ()     => fn()),
-    onLoginStatusChanged: (fn)    => ipcRenderer.on('login-status-changed', (_, v) => fn(v)),
     onHideCtx:            (fn)    => ipcRenderer.on('hide-ctx',             ()     => fn()),
   });
 }
