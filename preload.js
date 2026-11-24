@@ -11,8 +11,14 @@ if (location.protocol === 'file:') {
     saveConfig:           (patch) => ipcRenderer.invoke('save-config', patch),
     getHistory:           ()      => ipcRenderer.invoke('get-history'),
     getLoginStatus:       ()      => ipcRenderer.invoke('get-login-status'),
+    getAccountsStatus:    ()      => ipcRenderer.invoke('get-accounts-status'),
     openLogin:            ()      => ipcRenderer.send('open-login'),
-    logout:               ()      => ipcRenderer.send('logout'),
+    switchAccount:        (id)    => ipcRenderer.send('switch-account', id),
+    addAccount:           ()      => ipcRenderer.send('add-account'),
+    removeAccount:        (id)    => ipcRenderer.send('remove-account', id),
+    renameAccount:        (id, label) => ipcRenderer.send('rename-account', id, label),
+    logoutAccount:        (id)    => ipcRenderer.send('logout-account', id),
+    loginAccount:         (id)    => ipcRenderer.send('login-account', id),
     openSettings:         ()      => ipcRenderer.send('open-settings'),
     closeSettings:        ()      => ipcRenderer.send('close-settings'),
     hideWidget:           ()      => ipcRenderer.send('hide-widget'),
@@ -24,5 +30,7 @@ if (location.protocol === 'file:') {
     onUsageUpdate:        (fn)    => ipcRenderer.on('usage-update',         (_, d) => fn(d)),
     onLoginSuccess:       (fn)    => ipcRenderer.on('login-success',        ()     => fn()),
     onHideCtx:            (fn)    => ipcRenderer.on('hide-ctx',             ()     => fn()),
+    onAccountsChanged:    (fn)    => ipcRenderer.on('accounts-changed',     (_, d) => fn(d)),
+    onConfigChanged:      (fn)    => ipcRenderer.on('config-changed',       (_, d) => fn(d)),
   });
 }

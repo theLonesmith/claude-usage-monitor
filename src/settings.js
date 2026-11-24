@@ -1,13 +1,16 @@
 // settings.js — renderer for the settings panel
 
 // ── DOM refs ──────────────────────────────────────────────────────────────
-const loggedInEl   = document.getElementById('state-logged-in');
-const loggedOutEl  = document.getElementById('state-logged-out');
-const btnLogin     = document.getElementById('btn-login');
-const btnLogout    = document.getElementById('btn-logout');
+const accountsList  = document.getElementById('accounts-list');
+const btnAddAccount = document.getElementById('btn-add-account');
 
 document.getElementById('btn-close-settings')
   .addEventListener('click', () => window.claude.closeSettings());
+
+const trackSession = document.getElementById('track-session');
+const trackWeekly  = document.getElementById('track-weekly');
+const trackFable   = document.getElementById('track-fable');
+const trackExtra   = document.getElementById('track-extra');
 
 const notifEnabled = document.getElementById('notif-enabled');
 const notifThresh  = document.getElementById('notif-thresholds');
@@ -31,9 +34,8 @@ const btnCoffee    = document.getElementById('btn-coffee');
 
 // ── Init ──────────────────────────────────────────────────────────────────
 async function init() {
-  const [cfg, loggedIn, version] = await Promise.all([
+  const [cfg, version] = await Promise.all([
     window.claude.getConfig(),
-    window.claude.getLoginStatus(),
     window.claude.getVersion(),
   ]);
 
@@ -41,19 +43,134 @@ async function init() {
   const verEl = document.getElementById('about-version');
   if (verEl) verEl.textContent = `v${version}`;
 
-  applyLoginState(loggedIn);
   applyConfig(cfg);
   bindAll(cfg, version);
+  await renderAccounts();
 }
 
-// ── Apply login state ─────────────────────────────────────────────────────
-function applyLoginState(loggedIn) {
-  loggedInEl.classList.toggle('hidden', !loggedIn);
-  loggedOutEl.classList.toggle('hidden',  loggedIn);
+// ── Accounts list ──────────────────────────────────────────────────────────
+//
+// One card per account: label (with inline rename), email, Active/Connected
+// pills, and per-account actions. Rebuilt from scratch on every change —
+// the list is tiny, so simplicity wins over DOM diffing. Built with
+// createElement/textContent (labels and emails are data, never markup).
+async function renderAccounts() {
+  const [cfg, statuses] = await Promise.all([
+    window.claude.getConfig(),
+    window.claude.getAccountsStatus(),
+  ]);
+  const loggedInById = Object.fromEntries(statuses.map(s => [s.id, s.loggedIn]));
+
+  accountsList.innerHTML = '';
+
+  for (const a of (cfg.accounts || [])) {
+    const isActive = a.id === cfg.active_account;
+    const loggedIn = !!loggedInById[a.id];
+
+    const card = document.createElement('div');
+    card.className = 'acct-card' + (isActive ? ' acct-card-active' : '');
+
+    // ── Top row: identity + status pills ───────────────────────────────────
+    const top = document.createElement('div');
+    top.className = 'acct-top';
+
+    const idCol = document.createElement('div');
+    idCol.className = 'acct-id';
+
+    const labelRow = document.createElement('div');
+    labelRow.className = 'acct-label-row';
+    const label = document.createElement('span');
+    label.className = 'acct-label';
+    label.textContent = a.label;
+    const renameBtn = document.createElement('button');
+    renameBtn.className = 'acct-rename';
+    renameBtn.title = 'Rename this account';
+    renameBtn.textContent = '✎';
+    labelRow.appendChild(label);
+    labelRow.appendChild(renameBtn);
+
+    const email = document.createElement('div');
+    email.className = 'acct-email';
+    email.textContent = a.email || (loggedIn ? 'Logged in' : 'Not logged in yet');
+
+    idCol.appendChild(labelRow);
+    idCol.appendChild(email);
+
+    const pills = document.createElement('div');
+    pills.className = 'acct-pills';
+    if (isActive) {
+      const p = document.createElement('span');
+      p.className = 'pill pill-accent';
+      p.textContent = 'Active';
+      pills.appendChild(p);
+    }
+    const status = document.createElement('span');
+    status.className = 'pill ' + (loggedIn ? 'pill-green' : 'pill-red');
+    status.textContent = loggedIn ? '● Connected' : '● Not connected';
+    pills.appendChild(status);
+
+    top.appendChild(idCol);
+    top.appendChild(pills);
+    card.appendChild(top);
+
+    // ── Inline rename ───────────────────────────────────────────────────────
+    renameBtn.addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.className = 'acct-rename-input';
+      input.maxLength = 32;
+      input.value = a.label;
+      labelRow.replaceWith(input);
+      input.focus();
+      input.select();
+      let done = false;
+      const commit = () => {
+        if (done) return;
+        done = true;
+        const val = input.value.trim();
+        if (val && val !== a.label) window.claude.renameAccount(a.id, val);
+        else renderAccounts();   // restore the label row unchanged
+      };
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter')  commit();
+        if (e.key === 'Escape') { done = true; renderAccounts(); }
+      });
+      input.addEventListener('blur', commit);
+    });
+
+    // ── Action buttons ──────────────────────────────────────────────────────
+    const actions = document.createElement('div');
+    actions.className = 'acct-actions';
+
+    const addBtn = (text, cls, onClick) => {
+      const b = document.createElement('button');
+      b.className = `btn-sm ${cls}`;
+      b.textContent = text;
+      b.addEventListener('click', onClick);
+      actions.appendChild(b);
+      return b;
+    };
+
+    if (!isActive)  addBtn('Switch to', 'btn-sm-accent', () => window.claude.switchAccount(a.id));
+    if (!loggedIn)  addBtn('Log in',    'btn-sm-accent', () => window.claude.loginAccount(a.id));
+    if (loggedIn)   addBtn('Log out',   'btn-sm-plain',  () => window.claude.logoutAccount(a.id));
+    addBtn('Remove', 'btn-sm-danger', () => {
+      if (confirm(`Remove "${a.label}"${a.email ? ` (${a.email})` : ''}?\n\nThis logs the account out and deletes its usage history from this computer.`)) {
+        window.claude.removeAccount(a.id);
+      }
+    });
+
+    card.appendChild(actions);
+    accountsList.appendChild(card);
+  }
 }
 
 // ── Apply config to UI ────────────────────────────────────────────────────
 function applyConfig(cfg) {
+  trackSession.checked = cfg.track_session !== false;
+  trackWeekly.checked  = cfg.track_weekly  !== false;
+  trackFable.checked   = cfg.track_fable   !== false;
+  trackExtra.checked   = cfg.track_extra   !== false;
+
   notifEnabled.checked = cfg.notifications_enabled;
   notifThresh.classList.toggle('disabled', !cfg.notifications_enabled);
 
@@ -88,14 +205,21 @@ function updateStartMinEnabled() {
 
 // ── Bind all controls ─────────────────────────────────────────────────────
 function bindAll(cfg, version) {
-  // Login / Logout
-  btnLogin.addEventListener('click', () => window.claude.openLogin());
-  btnLogout.addEventListener('click', async () => {
-    btnLogout.textContent = 'Logging out…';
-    btnLogout.disabled    = true;
-    window.claude.logout();
-    // loginStatusChanged event will update the UI
-  });
+  // Accounts
+  btnAddAccount.addEventListener('click', () => window.claude.addAccount());
+
+  // Tracked usage windows
+  const trackMap = [
+    [trackSession, 'track_session'],
+    [trackWeekly,  'track_weekly' ],
+    [trackFable,   'track_fable'  ],
+    [trackExtra,   'track_extra'  ],
+  ];
+  for (const [toggle, key] of trackMap) {
+    toggle.addEventListener('change', async () => {
+      await window.claude.saveConfig({ [key]: toggle.checked });
+    });
+  }
 
   // Notifications master toggle
   notifEnabled.addEventListener('change', async () => {
@@ -141,8 +265,8 @@ function bindAll(cfg, version) {
     await window.claude.saveConfig({ refresh_interval: +prefInterval.value });
   });
 
-  // Buy Me a Coffee — URL comes from config (DEFAULTS.coffee_url) so it's
-  // changeable in one place instead of being hardcoded here.
+  // Buy Me a Coffee — URL is the COFFEE_URL constant in main.js, injected
+  // into the config object by the get-config handler.
   btnCoffee.addEventListener('click', () => {
     window.claude.openUrl(cfg.coffee_url || 'https://buymeacoffee.com/lonesmith');
   });
@@ -174,17 +298,8 @@ function bindAll(cfg, version) {
 }
 
 // ── Listen for events from main ───────────────────────────────────────────
-window.claude.onLoginSuccess(() => {
-  applyLoginState(true);
-});
-
-window.claude.onLoginStatusChanged(loggedIn => {
-  applyLoginState(loggedIn);
-  if (!loggedIn) {
-    btnLogout.textContent = 'Log out';
-    btnLogout.disabled    = false;
-  }
-});
+window.claude.onLoginSuccess(() => { renderAccounts(); });
+window.claude.onAccountsChanged(() => { renderAccounts(); });
 
 // ── Boot ──────────────────────────────────────────────────────────────────
 init();

@@ -20,16 +20,19 @@ Just download the `.exe` installer and run it. No Node.js, no terminal, nothing 
 
 - **Session usage bar** — 5-hour window showing % used and time until reset
 - **Weekly usage bar** — 7-day window showing % used and time until reset
-- **Usage history graph** — an 8-hour timeline plus a daily breakdown of your week, with markers showing where Claude reset your limits
+- **Fable usage bar** — separate 7-day window for the Fable model, when your plan reports one *(new in 1.0.3)*
+- **Tracked-window toggles** — show only the usage windows you care about; the widget resizes to fit *(new in 1.0.3)*
+- **Multiple accounts** — add several Claude.ai logins, name them, and switch in one click from the widget header, tray menu, or Settings *(new in 1.0.3)*
+- **Usage history graph** — an 8-hour timeline plus a daily breakdown of your week, with markers showing where Claude reset your limits, kept per account
 - **Tray tooltip** — hover the tray icon to see your current session and weekly usage at a glance
 - **Toast notifications** — configurable alerts at warning and critical thresholds
-- **Extra usage bar** — shows your pay-per-use spend when that's enabled on your account
 - **Always on top** — stays visible above other windows (toggle in Settings)
 - **System tray** — minimize out of the way, always accessible
 - **Launch on startup** — auto-starts with Windows, optionally minimized to tray
-- **Automatic update alerts** — lets you know when a new version is available (toggle in Settings)
 - **Draggable** — drag the title bar to position the widget anywhere on screen
+- **Extra usage bar** — shows your pay-per-use spend when that's enabled on your account
 - **One-click login** — logs in to Claude.ai directly inside the app
+- **Automatic update alerts** — lets you know when a new version is available (toggle in Settings)
 
 ---
 
@@ -46,15 +49,16 @@ Just download the `.exe` installer and run it. No Node.js, no terminal, nothing 
 ## Usage
 
 **System tray:**
-- **Hover** the tray icon → see your current session & weekly usage in the tooltip
 - **Left-click** the tray icon → show / hide the widget
+- **Hover** the tray icon → see your current session & weekly usage in the tooltip
 - **Right-click** the tray icon → Refresh, Check for Updates, Settings, or Quit
 
 **Settings** (gear icon in the widget):
 
 | Setting | Description |
 |---|---|
-| Login / Logout | Connect or disconnect your Claude.ai account |
+| Accounts | Add, rename, switch, log in/out, or remove Claude.ai accounts |
+| Tracked Usage Windows | Choose which bars the widget shows: Session, Weekly, Fable, Extra Usage |
 | Allow Notifications | Master on/off toggle for Windows toast alerts |
 | Session warning % | Amber bar threshold (default 75%) |
 | Session critical % | Red bar + toast threshold (default 95%) |

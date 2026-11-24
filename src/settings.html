@@ -23,30 +23,61 @@
   <!-- ── Scrollable content ──────────────────────────────────────── -->
   <div class="content">
 
-    <!-- Account -->
+    <!-- Accounts -->
     <section class="section">
-      <div class="section-title">Account</div>
+      <div class="section-title">Accounts</div>
+      <div id="accounts-list"></div>
+      <button class="btn btn-ghost btn-add-acct" id="btn-add-account">＋&ensp;Add Account</button>
+    </section>
 
-      <div id="state-logged-in" class="hidden">
-        <div class="row">
-          <div class="row-left">
-            <div class="row-label">Status</div>
-            <div class="row-sub">Connected to Claude.ai</div>
-          </div>
-          <div class="pill pill-green">● Connected</div>
+    <div class="rule"></div>
+
+    <!-- Tracked usage windows -->
+    <section class="section">
+      <div class="section-title">Tracked Usage Windows</div>
+
+      <div class="row row-toggle">
+        <div class="row-left">
+          <div class="row-label">Session</div>
+          <div class="row-sub">5-hour rolling window</div>
         </div>
-        <button class="btn btn-ghost" id="btn-logout">Log out</button>
+        <label class="toggle">
+          <input type="checkbox" id="track-session">
+          <span class="slider"></span>
+        </label>
       </div>
 
-      <div id="state-logged-out">
-        <div class="row">
-          <div class="row-left">
-            <div class="row-label">Status</div>
-            <div class="row-sub">Log in to start tracking usage</div>
-          </div>
-          <div class="pill pill-red">● Not connected</div>
+      <div class="row row-toggle">
+        <div class="row-left">
+          <div class="row-label">Weekly</div>
+          <div class="row-sub">7-day window, all models</div>
         </div>
-        <button class="btn btn-accent" id="btn-login">Login with Claude</button>
+        <label class="toggle">
+          <input type="checkbox" id="track-weekly">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="row row-toggle">
+        <div class="row-left">
+          <div class="row-label">Fable</div>
+          <div class="row-sub">7-day window for the Fable model (shown when your plan reports it)</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="track-fable">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="row row-toggle">
+        <div class="row-left">
+          <div class="row-label">Extra Usage</div>
+          <div class="row-sub">Pay-per-use credits</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="track-extra">
+          <span class="slider"></span>
+        </label>
       </div>
     </section>
 

@@ -54,6 +54,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;   /* allow the account label to truncate instead of pushing the buttons out */
 }
 
 .logo {
@@ -68,6 +69,9 @@ html, body {
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;   /* long account names truncate (title shows the email) */
 }
 
 .header-btns {
@@ -156,6 +160,10 @@ html, body {
 }
 
 .bar-block {}
+
+/* A hidden bar leaves the layout entirely — the window height is computed
+   from the count of visible bars, so hidden must mean gone, not clipped. */
+.bar-block.hidden { display: none; }
 
 .bar-header {
   display: flex;
@@ -510,6 +518,44 @@ html, body {
   background: #333;
   margin: 3px 0;
 }
+
+/* ── Account switcher dropdown ───────────────────────────────────────────── */
+#acct-menu { min-width: 200px; max-width: 300px; }
+
+.acct-item { gap: 8px; align-items: center; }
+.acct-check {
+  width: 12px;
+  flex-shrink: 0;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 11px;
+}
+.acct-col   { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.acct-label {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.acct-email {
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.acct-active .acct-label { color: var(--accent); }
+
+/* ── Empty state when every tracked-window toggle is off ─────────────────── */
+.no-bars {
+  padding: 18px 8px;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.5;
+}
+.no-bars.hidden { display: none; }
 
 /* ── Limit-reached banner ────────────────────────────────────────────────── */
 .limit-banner {

@@ -23,6 +23,9 @@
     <div class="ctx-item ctx-danger" data-action="hide">✕&ensp;Hide to Tray</div>
   </div>
 
+  <!-- ── Account switcher dropdown (populated by widget.js) ────────── -->
+  <div id="acct-menu" class="ctx hidden"></div>
+
   <!-- ── Widget ──────────────────────────────────────────────────── -->
   <div class="widget">
 
@@ -33,6 +36,13 @@
         <span class="app-name">Claude Usage Monitor</span>
       </div>
       <div class="header-btns">
+        <!-- Account switcher: opens a dropdown listing every account -->
+        <button class="hbtn" id="btn-account" title="Switch account">
+          <svg class="hbtn-svg" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <circle cx="9" cy="6" r="3.2"/>
+            <path d="M 3 15.5 C 3 11.9 5.7 10.4 9 10.4 C 12.3 10.4 15 11.9 15 15.5"/>
+          </svg>
+        </button>
         <!-- View toggle: calendar SVG = on bars view; meter img = on history view -->
         <button class="hbtn hbtn-toggle" id="btn-view-toggle" title="Show Usage History">
           <svg id="icon-calendar" class="hbtn-svg" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
@@ -64,8 +74,11 @@
       <div class="view-panel" id="view-bars">
         <div class="bars">
 
+          <!-- Shown when every tracked-window toggle is off -->
+          <div class="no-bars hidden" id="no-bars">No usage windows tracked — turn one on in Settings</div>
+
           <!-- Session -->
-          <div class="bar-block">
+          <div class="bar-block" id="bar-session">
             <div class="bar-header">
               <span class="bar-name">SESSION <span class="bar-sub">(5-hour window)</span></span>
               <span class="bar-pct" id="s-pct">—</span>
@@ -75,13 +88,23 @@
           </div>
 
           <!-- Weekly -->
-          <div class="bar-block">
+          <div class="bar-block" id="bar-weekly">
             <div class="bar-header">
               <span class="bar-name">WEEKLY <span class="bar-sub">(7-day window)</span></span>
               <span class="bar-pct" id="w-pct">—</span>
             </div>
             <div class="track"><div class="fill" id="w-fill"></div></div>
             <div class="bar-footer"><span class="bar-reset" id="w-reset"></span></div>
+          </div>
+
+          <!-- Fable — model-specific 7-day window, shown when tracked & present -->
+          <div class="bar-block hidden" id="bar-fable">
+            <div class="bar-header">
+              <span class="bar-name"><span id="f-name">FABLE</span> <span class="bar-sub">(7-day window)</span></span>
+              <span class="bar-pct" id="f-pct">—</span>
+            </div>
+            <div class="track"><div class="fill" id="f-fill"></div></div>
+            <div class="bar-footer"><span class="bar-reset" id="f-reset"></span></div>
           </div>
 
           <!-- Extra usage — only shown when is_enabled === true -->

@@ -8,25 +8,38 @@ let chartRange       = '8h';
 let latestHistory    = [];
 let sessionResetsAt  = null;
 let weeklyResetsAt   = null;
+let fableResetsAt    = null;
 let bannerTimer      = null;
 let viewMode         = 'bars'; // always starts as 'bars' on every launch
+let lastData         = null;   // last successful usage payload — re-rendered when toggles change
 
 // ── DOM refs ──────────────────────────────────────────────────────────────
 const sFill       = document.getElementById('s-fill');
 const wFill       = document.getElementById('w-fill');
 const eFill       = document.getElementById('e-fill');
+const fFill       = document.getElementById('f-fill');
 const sPct        = document.getElementById('s-pct');
 const wPct        = document.getElementById('w-pct');
 const ePct        = document.getElementById('e-pct');
+const fPct        = document.getElementById('f-pct');
 const sReset      = document.getElementById('s-reset');
 const wReset      = document.getElementById('w-reset');
+const fReset      = document.getElementById('f-reset');
+const fName       = document.getElementById('f-name');
 const eCredits    = document.getElementById('e-credits');
+const barSession  = document.getElementById('bar-session');
+const barWeekly   = document.getElementById('bar-weekly');
+const barFable    = document.getElementById('bar-fable');
 const barExtra    = document.getElementById('bar-extra');
+const noBars      = document.getElementById('no-bars');
 const limitBanner = document.getElementById('limit-banner');
 const statusEl    = document.getElementById('status');
 const timeEl      = document.getElementById('last-update');
 const ctxMenu     = document.getElementById('ctx');
 const ctxBackdrop = document.getElementById('ctx-backdrop');
+const acctMenu    = document.getElementById('acct-menu');
+const btnAccount  = document.getElementById('btn-account');
+const appNameEl   = document.querySelector('.app-name');
 
 // View toggle elements
 const viewBarsPanel    = document.getElementById('view-bars');
@@ -50,6 +63,21 @@ const btnViewToggle    = document.getElementById('btn-view-toggle');
 // ─────────────────────────────────────────────────────────────────────────
 window.claude.onUsageUpdate(handleUpdate);
 window.claude.onLoginSuccess(() => setStatus('Connected ✓', 'ok'));
+
+// Tracked-window toggles flipped in Settings → re-render the bars from the
+// last data immediately instead of waiting for the next poll.
+window.claude.onConfigChanged(newCfg => {
+  cfg = newCfg;
+  renderBars();
+  renderAccountUI();
+});
+
+// Account added / removed / renamed / switched → refresh the switcher UI.
+window.claude.onAccountsChanged(({ accounts, active_account }) => {
+  cfg.accounts       = accounts;
+  cfg.active_account = active_account;
+  renderAccountUI();
+});
 
 // ── Lazy chart initialiser ────────────────────────────────────────────────
 // Called only after the history panel has display:flex and the browser has
@@ -174,7 +202,11 @@ async function init() {
     dailyWrapEl.classList.remove('v-gone');
   }
 
-  updateCtxChecks();
+  // NOTE: an updateCtxChecks() call removed in 1.0.3 — the function no longer
+  // existed and the dangling reference silently aborted the rest of init(),
+  // so the saved history never loaded until fresh samples arrived.
+  renderAccountUI();
+  renderBars();   // apply tracked-window visibility before the first poll lands
 
   const hist = await window.claude.getHistory();
   latestHistory = hist;
@@ -208,20 +240,26 @@ function handleUpdate(d) {
   }
 
   const {
-    s, w, resets, weeklyResets, extraUsage,
-    sessionResetsAt: sRA, weeklyResetsAt: wRA, updatedAt, history,
+    s, w, point, updatedAt,
+    sessionResetsAt: sRA, weeklyResetsAt: wRA, fable,
   } = d;
-  latestHistory   = history || latestHistory;
+
+  // Main now sends only the single new sample (or null), not the whole array.
+  // Append it to our local copy and prune to the 7-day window. The timestamp
+  // check dedupes against the brief startup race with init()'s getHistory().
+  if (point) {
+    const lastTs = latestHistory.length ? latestHistory[latestHistory.length - 1].ts : null;
+    if (point.ts !== lastTs) latestHistory.push(point);
+    const cutoff = Date.now() - 7 * 86_400_000;
+    while (latestHistory.length && latestHistory[0].ts <= cutoff) latestHistory.shift();
+  }
+
   sessionResetsAt = sRA || sessionResetsAt;
   weeklyResetsAt  = wRA || weeklyResetsAt;
+  fableResetsAt   = (fable && fable.resetsAt) || fableResetsAt;
 
-  setBar('s', s);
-  setBar('w', w);
-  updateExtraUsage(extraUsage);
-  updateLimitBanner(s, w);
-
-  sReset.textContent = resets       || '';
-  wReset.textContent = weeklyResets || '';
+  lastData = d;
+  renderBars();
 
   const bothNull = s === null && w === null;
   setStatus(
@@ -230,17 +268,66 @@ function handleUpdate(d) {
   );
   timeEl.textContent = updatedAt ? `↻ ${updatedAt}` : '';
 
-  if (chartRange === 'day' && viewMode === 'history') {
-    try { renderDailyView(latestHistory, weeklyResetsAt); } catch (_) {}
-  } else {
-    try { renderChart(latestHistory, chartRange); } catch (_) {}
+  // Only re-render the history panel when it's actually visible. When the user
+  // opens it, setViewMode() re-renders with the latest data, so nothing is lost
+  // by skipping these updates while the bars view is showing.
+  if (viewMode === 'history') {
+    if (chartRange === 'day') {
+      try { renderDailyView(latestHistory, weeklyResetsAt); } catch (_) {}
+    } else {
+      try { renderChart(latestHistory, chartRange); } catch (_) {}
+    }
   }
 }
 
-// ── Bar helpers ───────────────────────────────────────────────────────────
+// ── Bar rendering ─────────────────────────────────────────────────────────
+//
+// Single entry point that renders every bar from the last usage payload plus
+// the tracked-window toggles, then sizes the window to exactly the bars that
+// are showing (130px of chrome + 50px per bar). Called on every poll AND
+// whenever a toggle changes in Settings, so flipping a toggle takes effect
+// instantly without waiting for the next poll.
+function renderBars() {
+  const d     = lastData || {};
+  const s     = d.s !== undefined ? d.s : null;
+  const w     = d.w !== undefined ? d.w : null;
+  const fable = d.fable || null;
+  const extra = d.extraUsage || null;
+
+  const showS = cfg.track_session !== false;
+  const showW = cfg.track_weekly  !== false;
+  const showF = cfg.track_fable   !== false && !!fable;
+
+  barSession.classList.toggle('hidden', !showS);
+  barWeekly.classList.toggle('hidden',  !showW);
+  barFable.classList.toggle('hidden',   !showF);
+
+  if (showS) { setBar('s', s); sReset.textContent = d.resets || ''; }
+  if (showW) { setBar('w', w); wReset.textContent = d.weeklyResets || ''; }
+  if (showF) {
+    fName.textContent  = (fable.label || 'FABLE').toUpperCase();
+    setBar('f', fable.frac);
+    fReset.textContent = fable.resets || '';
+  }
+
+  let showE = false;
+  if (cfg.track_extra !== false) {
+    showE = updateExtraUsage(extra);
+  } else {
+    barExtra.classList.add('hidden');
+  }
+
+  // Untracked windows shouldn't raise the limit banner either
+  updateLimitBanner(showS ? s : null, showW ? w : null, showF ? fable : null);
+
+  const visible = [showS, showW, showF, showE].filter(Boolean).length;
+  noBars.classList.toggle('hidden', visible !== 0);
+  window.claude.resizeForBars(visible === 0 ? 170 : 130 + 50 * visible);
+}
+
 function setBar(which, frac) {
-  const fill = which === 's' ? sFill : wFill;
-  const pct  = which === 's' ? sPct  : wPct;
+  const fill = which === 's' ? sFill : which === 'w' ? wFill : fFill;
+  const pct  = which === 's' ? sPct  : which === 'w' ? wPct  : fPct;
 
   if (frac === null || frac === undefined) {
     fill.style.width = '0%';
@@ -258,11 +345,12 @@ function setBar(which, frac) {
 }
 
 // ── Extra usage bar ───────────────────────────────────────────────────────
+// Renders the extra-usage bar's content and visibility; returns true when the
+// bar is showing. Window sizing is renderBars()'s job — no resize calls here.
 function updateExtraUsage(extra) {
   if (!extra) {
     barExtra.classList.add('hidden');
-    window.claude.resizeForBars(230);
-    return;
+    return false;
   }
 
   // ── Feature disabled in Claude settings ──────────────────────────────────
@@ -274,8 +362,7 @@ function updateExtraUsage(extra) {
     ePct.style.color     = 'var(--muted)';
     ePct.style.fontSize  = '';
     eCredits.textContent = 'Extra usage currently turned off.';
-    window.claude.resizeForBars(280);
-    return;
+    return true;
   }
 
   // ── Unlimited spend limit ────────────────────────────────────────────────
@@ -287,18 +374,15 @@ function updateExtraUsage(extra) {
     ePct.style.color     = '';
     ePct.style.fontSize  = '20px';
     eCredits.textContent = 'Unlimited Spend Limit Enabled';
-    window.claude.resizeForBars(280);
-    return;
+    return true;
   }
 
   if (extra.utilization === null || extra.utilization === undefined) {
     barExtra.classList.add('hidden');
-    window.claude.resizeForBars(230);
-    return;
+    return false;
   }
 
   barExtra.classList.remove('hidden');
-  window.claude.resizeForBars(280);
 
   const pctVal = Math.round(extra.utilization * 100);
   eFill.style.width   = `${Math.min(100, pctVal)}%`;
@@ -320,6 +404,7 @@ function updateExtraUsage(extra) {
   } else {
     eCredits.textContent = '';
   }
+  return true;
 }
 
 // ── Limit-reached banner ──────────────────────────────────────────────────
@@ -333,8 +418,8 @@ function countdownStr(isoTs) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-function renderLimitBanner(sMaxed, wMaxed) {
-  if (!sMaxed && !wMaxed) {
+function renderLimitBanner(sMaxed, wMaxed, fMaxed, fLabel) {
+  if (!sMaxed && !wMaxed && !fMaxed) {
     limitBanner.classList.add('hidden');
     limitBanner.textContent = '';
     return;
@@ -348,32 +433,36 @@ function renderLimitBanner(sMaxed, wMaxed) {
     const cd = countdownStr(weeklyResetsAt);
     lines.push(`⚠  Weekly limit reached${cd ? ' — resets in ' + cd : ''}`);
   }
+  if (fMaxed) {
+    const cd = countdownStr(fableResetsAt);
+    lines.push(`⚠  ${fLabel} limit reached${cd ? ' — resets in ' + cd : ''}`);
+  }
   limitBanner.textContent = lines.join('   •   ');
   limitBanner.classList.remove('hidden');
 }
 
-function updateLimitBanner(s, w) {
+function updateLimitBanner(s, w, fable) {
   const sMaxed = s !== null && s >= 1.0;
   const wMaxed = w !== null && w >= 1.0;
-  renderLimitBanner(sMaxed, wMaxed);
+  const fMaxed = !!(fable && fable.frac !== null && fable.frac >= 1.0);
+  const fLabel = (fable && fable.label) || 'Fable';
+  renderLimitBanner(sMaxed, wMaxed, fMaxed, fLabel);
   if (bannerTimer) { clearInterval(bannerTimer); bannerTimer = null; }
-  if (sMaxed || wMaxed) {
-    bannerTimer = setInterval(() => renderLimitBanner(sMaxed, wMaxed), 30_000);
+  if (sMaxed || wMaxed || fMaxed) {
+    bannerTimer = setInterval(() => renderLimitBanner(sMaxed, wMaxed, fMaxed, fLabel), 30_000);
   }
 }
 
 function resetBars() {
-  setBar('s', null);
-  setBar('w', null);
-  updateExtraUsage(null);
-  limitBanner.classList.add('hidden');
-  sReset.textContent = '';
-  wReset.textContent = '';
+  lastData = null;
+  renderBars();   // clears every tracked bar to '—' and hides fable/extra
   timeEl.textContent = '';
-  if (chartRange === 'day') {
-    try { renderDailyView([], weeklyResetsAt); } catch (_) {}
-  } else {
-    try { renderChart([], chartRange); } catch (_) {}
+  if (viewMode === 'history') {
+    if (chartRange === 'day') {
+      try { renderDailyView([], weeklyResetsAt); } catch (_) {}
+    } else {
+      try { renderChart([], chartRange); } catch (_) {}
+    }
   }
 }
 
@@ -383,10 +472,44 @@ function setStatus(msg, type = '') {
 }
 
 // ── Chart ─────────────────────────────────────────────────────────────────
+
+// Inline Chart.js plugin: draws a dashed vertical line wherever the weekly
+// utilization DROPPED inside the visible window. The weekly number only ever
+// climbs within a billing week, so a drop means Anthropic reset or re-baselined
+// the limits (it happens at model launches — e.g. Fable 5, June 2026). Without
+// the marker, the line just plunges and looks like a glitch. renderChart
+// computes the positions and stashes them on the chart as $resetMarkers.
+const resetMarkerPlugin = {
+  id: 'resetMarkers',
+  afterDatasetsDraw(c) {
+    const marks = c.$resetMarkers;
+    if (!marks || !marks.length) return;
+    const { ctx, chartArea, scales } = c;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(201,114,72,0.65)';   // weekly-line orange
+    ctx.lineWidth   = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.fillStyle   = 'rgba(201,114,72,0.9)';
+    ctx.font        = '8px sans-serif';
+    ctx.textAlign   = 'center';
+    for (const x of marks) {
+      const px = scales.x.getPixelForValue(x);
+      if (px < chartArea.left - 1 || px > chartArea.right + 1) continue;
+      ctx.beginPath();
+      ctx.moveTo(px, chartArea.top + 9);
+      ctx.lineTo(px, chartArea.bottom);
+      ctx.stroke();
+      ctx.fillText('reset', px, chartArea.top + 7);
+    }
+    ctx.restore();
+  },
+};
+
 function initChart() {
   const ctx = document.getElementById('chart').getContext('2d');
   chart = new Chart(ctx, {
     type: 'line',
+    plugins: [resetMarkerPlugin],
     data: {
       labels: [],
       datasets: [
@@ -435,18 +558,48 @@ function renderChart(history, range) {
   if (!chart || !Array.isArray(history)) return;
   const now = Date.now();
 
-  // Past 8 hours — rolling 1-hour buckets going back from now.
-  // spanGaps:true on each dataset draws a thin connecting line across empty
-  // buckets instead of leaving a confusing visual gap.
+  // Past 8 hours — eight rolling 1-hour buckets going back from now. Each bucket
+  // holds its most recent sample. We make a single chronological pass over the
+  // history (instead of filtering the whole array once per bucket): the bucket
+  // index is just the number of whole hours between the sample and the window
+  // start, and because samples are in time order the last write to each bucket
+  // wins. spanGaps:true on each dataset connects across empty buckets.
+  const windowStart = now - 8 * 3_600_000;
   const buckets = [];
   for (let i = 7; i >= 0; i--) {
-    const bucketEnd   = now - i * 3_600_000;
-    const bucketStart = bucketEnd - 3_600_000;
-    const pts  = history.filter(h => h.ts >= bucketStart && h.ts < bucketEnd);
-    const last = pts[pts.length - 1];
-    const label = new Date(bucketEnd).toLocaleTimeString([], { hour: 'numeric', hour12: true });
-    buckets.push({ label, s: last?.s ?? null, w: last?.w ?? null });
+    const bucketEnd = now - i * 3_600_000;
+    buckets.push({
+      label: new Date(bucketEnd).toLocaleTimeString([], { hour: 'numeric', hour12: true }),
+      s: null, w: null,
+    });
   }
+  // Reset markers: a drop in the weekly value between consecutive samples means
+  // Anthropic reset the limits mid-window. Record where it happened so the
+  // resetMarkers plugin can draw a dashed line there. Bucket i's plotted point
+  // represents (i+1) hours after windowStart, so a sample at `hours` maps to
+  // the fractional category position hours - 1. The 2-point threshold ignores
+  // rounding jitter.
+  const resetMarks = [];
+  let prevChartW = null;
+  for (const h of history) {
+    if (h.ts >= now) continue;
+    if (h.ts < windowStart) {
+      if (h.w !== null && h.w !== undefined) prevChartW = h.w;
+      continue;
+    }
+    let idx = Math.floor((h.ts - windowStart) / 3_600_000);
+    if (idx < 0) idx = 0; else if (idx > 7) idx = 7;
+    buckets[idx].s = h.s ?? null;
+    buckets[idx].w = h.w ?? null;
+    if (h.w !== null && h.w !== undefined) {
+      if (prevChartW !== null && prevChartW - h.w > 0.02) {
+        const fIdx = (h.ts - windowStart) / 3_600_000 - 1;
+        resetMarks.push(Math.max(0, Math.min(7, fIdx)));
+      }
+      prevChartW = h.w;
+    }
+  }
+  chart.$resetMarkers = resetMarks;
   chart.options.scales.x.ticks.maxTicksLimit = 9;
 
   chart.data.labels           = buckets.map(b => b.label);
@@ -484,9 +637,10 @@ function renderDailyView(history, weeklyResetsAtISO) {
 
   const resetMs   = new Date(weeklyResetsAtISO).getTime();
   const weekStart = resetMs - 7 * 86_400_000;
+  const weekEnd   = weekStart + 7 * 86_400_000;
   const now       = Date.now();
 
-  // Build one entry per day
+  // Day buckets, anchored to the weekly reset time (≈10 PM → 10 PM windows)
   const days = [];
   for (let i = 0; i < 7; i++) {
     const dayStart = weekStart + i * 86_400_000;
@@ -494,35 +648,59 @@ function renderDailyView(history, weeklyResetsAtISO) {
     const isToday  = dayStart <= now && now < dayEnd;
     const isFuture = dayStart > now;
     const label    = DAY_NAMES[new Date(dayStart + 43_200_000).getDay()];
-
-    const pts  = history.filter(h => h.ts >= dayStart && h.ts < dayEnd && h.w !== null);
-    const maxW = pts.length > 0 ? Math.max(...pts.map(h => h.w)) : null;
-
-    days.push({ label, isToday, isFuture, maxW });
+    days.push({ label, isToday, isFuture, dayStart, dayEnd, used: 0 });
   }
 
-  // Incremental usage per day = increase in weekly fraction that day
-  const rows = days.map((day, i) => {
-    if (day.isFuture) return { ...day, delta: null };
-    const prevMax = i === 0 ? 0 : (days[i - 1].maxW ?? 0);
-    const curMax  = day.maxW ?? prevMax;
-    return { ...day, delta: Math.max(0, curMax - prevMax) };
-  });
+  // ── Per-day usage = sum of positive sample-to-sample increases ─────────────
+  //
+  // The weekly utilization % normally only climbs during a week and resets to 0
+  // exactly at the window boundary. But Anthropic can reset or re-baseline it
+  // MID-week (e.g. a model launch), dropping the value partway through a day.
+  // The old "today's peak minus yesterday's peak" math broke on that: a
+  // post-reset day whose peak sat below the pre-reset peak produced a negative
+  // delta that clamped to 0%, hiding a whole day of real usage (the "Wednesday
+  // 0%" bug).
+  //
+  // Instead we walk every sample in time order and add only the positive steps
+  // (max(0, w - prevW)) to whichever day the sample lands in. The weekly window
+  // starts at 0 by definition, so prevW starts at 0 and the first sample's value
+  // counts as real usage. A reset is one big negative step that contributes
+  // nothing (correct — a reset isn't usage), and every climb after it is counted
+  // from the new baseline (correct — that's real usage in the new window). An
+  // empty day contributes 0% and can't inflate the next day, because the carried
+  // value is the last KNOWN sample, never an artificial zero.
+  const samples = history
+    .filter(h => h.w !== null && h.w !== undefined && h.ts >= weekStart && h.ts < weekEnd)
+    .sort((a, b) => a.ts - b.ts);
 
-  // Total used this week = highest weekly fraction seen across all days
-  const weeklyUsed = Math.max(...days.map(d => d.maxW ?? 0), 0);
-  const remaining  = Math.max(0, 1 - weeklyUsed);
+  let prevW   = 0;
+  let latestW = 0;
+  for (const samp of samples) {
+    const step = samp.w - prevW;
+    if (step > 0) {
+      for (const day of days) {
+        if (samp.ts >= day.dayStart && samp.ts < day.dayEnd) { day.used += step; break; }
+      }
+    }
+    prevW   = samp.w;
+    latestW = samp.w;
+  }
 
-  const rowsHtml = rows.map(row => {
+  // "Left" reflects the CURRENT window position (latest sample), so a stale
+  // pre-reset peak can't pollute it.
+  const remaining = Math.max(0, 1 - latestW);
+
+  const rowsHtml = days.map(day => {
+    const delta   = day.isFuture ? null : day.used;
     // Absolute scaling: bar width = actual % of weekly allowance used that day
-    const barPct  = row.delta !== null ? Math.min(100, Math.round(row.delta * 100)) : 0;
-    const pctText = row.isFuture ? '—' : `${Math.round((row.delta ?? 0) * 100)}%`;
+    const barPct  = delta !== null ? Math.min(100, Math.round(delta * 100)) : 0;
+    const pctText = day.isFuture ? '—' : `${Math.round((delta ?? 0) * 100)}%`;
 
-    const todayCls  = row.isToday  ? ' today'  : '';
-    const futureCls = row.isFuture ? ' future' : '';
+    const todayCls  = day.isToday  ? ' today'  : '';
+    const futureCls = day.isFuture ? ' future' : '';
 
     return `<div class="day-row">
-        <span class="day-label${todayCls}${futureCls}">${row.label}</span>
+        <span class="day-label${todayCls}${futureCls}">${day.label}</span>
         <div class="day-bar-track">
           <div class="day-bar-fill${todayCls}${futureCls}" style="width:${barPct}%"></div>
         </div>
@@ -542,13 +720,100 @@ function renderDailyView(history, weeklyResetsAtISO) {
   wrap.innerHTML = rowsHtml + remainingHtml;
 }
 
+// ── Account switcher ──────────────────────────────────────────────────────
+// Header shows the active account's name when more than one account exists;
+// the person icon opens a dropdown listing every account (active one checked)
+// plus Add / Manage entries.
+function renderAccountUI() {
+  const accounts = cfg.accounts || [];
+  const active   = accounts.find(a => a.id === cfg.active_account) || accounts[0];
+  if (accounts.length > 1 && active) {
+    appNameEl.textContent = active.label;
+    appNameEl.title       = active.email || '';
+  } else {
+    appNameEl.textContent = 'Claude Usage Monitor';
+    appNameEl.title       = '';
+  }
+  buildAcctMenu();
+}
+
+// Built with createElement/textContent (not innerHTML) — labels and emails
+// are user/API data and must never be parsed as markup.
+function buildAcctMenu() {
+  acctMenu.innerHTML = '';
+  for (const a of (cfg.accounts || [])) {
+    const isActive = a.id === cfg.active_account;
+
+    const item  = document.createElement('div');
+    item.className = 'ctx-item acct-item' + (isActive ? ' acct-active' : '');
+
+    const check = document.createElement('span');
+    check.className   = 'acct-check';
+    check.textContent = isActive ? '✓' : '';
+
+    const col = document.createElement('div');
+    col.className = 'acct-col';
+    const lbl = document.createElement('div');
+    lbl.className   = 'acct-label';
+    lbl.textContent = a.label;
+    col.appendChild(lbl);
+    if (a.email) {
+      const em = document.createElement('div');
+      em.className   = 'acct-email';
+      em.textContent = a.email;
+      col.appendChild(em);
+    }
+
+    item.appendChild(check);
+    item.appendChild(col);
+    item.addEventListener('click', () => {
+      hideCtx();
+      if (!isActive) {
+        setStatus('Switching account…');
+        window.claude.switchAccount(a.id);
+      }
+    });
+    acctMenu.appendChild(item);
+  }
+
+  const sep = document.createElement('div');
+  sep.className = 'ctx-sep';
+  acctMenu.appendChild(sep);
+
+  const add = document.createElement('div');
+  add.className   = 'ctx-item';
+  add.textContent = '＋ Add Account';
+  add.addEventListener('click', () => { hideCtx(); window.claude.addAccount(); });
+  acctMenu.appendChild(add);
+
+  const manage = document.createElement('div');
+  manage.className   = 'ctx-item';
+  manage.textContent = '⚙ Manage Accounts';
+  manage.addEventListener('click', () => { hideCtx(); window.claude.openSettings(); });
+  acctMenu.appendChild(manage);
+}
+
+btnAccount.addEventListener('click', () => {
+  const wasOpen = !acctMenu.classList.contains('hidden');
+  hideCtx();
+  if (wasOpen) return;
+  acctMenu.classList.remove('hidden');
+  ctxBackdrop.classList.remove('hidden');
+  const r    = btnAccount.getBoundingClientRect();
+  const left = Math.max(8, Math.min(r.left, window.innerWidth - acctMenu.offsetWidth - 8));
+  acctMenu.style.left = `${left}px`;
+  acctMenu.style.top  = `${r.bottom + 6}px`;
+});
+
 // ── Context menu ──────────────────────────────────────────────────────────
 function hideCtx() {
   ctxMenu.classList.add('hidden');
+  acctMenu.classList.add('hidden');
   ctxBackdrop.classList.add('hidden');
 }
 
 function showCtx(x, y) {
+  acctMenu.classList.add('hidden');   // the two menus never show together
   ctxMenu.classList.remove('hidden');
   ctxBackdrop.classList.remove('hidden');
   const clampedX = Math.min(x, window.innerWidth  - ctxMenu.offsetWidth  - 8);
