@@ -93,10 +93,10 @@ Just download the `.exe` installer and run it. No Node.js, no terminal, nothing 
 
 ## Privacy
 
-- All data is stored **locally** on your machine (`%AppData%\Claude Usage Monitor\`)
+- All data is stored **locally** on your machine (`%AppData%\claude-usage-monitor\`)
 - Nothing is sent to any third-party server — this app talks only to `claude.ai`
 - Your Claude.ai session cookie is stored in an isolated Electron session partition
-- Uninstalling removes the program files; your AppData folder is kept so you can reinstall without re-logging in (delete it manually if you want a clean wipe)
+- Uninstalling removes the program files and all app data (settings, usage history, and your Claude.ai login), so a reinstall starts fresh and you'll need to log in again
 
 ---
 
